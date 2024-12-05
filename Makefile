@@ -85,12 +85,8 @@ SRC_OBJS = $(patsubst %.s,%.o, $(patsubst %.c,%.o, $(SRC_FILES)))
 
 CIPHERS_FILES = $(wildcard ciphers/*.c ciphers/*.s)
 CIPHERS_OBJS = $(patsubst %.s,%.o, $(patsubst %.c,%.o, $(CIPHERS_FILES)))
-# TODO: more ciphers to come:
+
 CIPHERS=ciphers/gift.s
-# CIPHERS_OBJS=$(CIPHERS:.s=.o)
-# CIPHERS_BINS=$(CIPHERS:.s=.elf)
-
-
 
 all: gift64 gift64.ccram
 
@@ -142,7 +138,7 @@ reboot:
 
 # Save serial input to the given file
 %.log: %.hex force
-	./bin/serial.sh $*.elf $< $@
+	sh ./bin/serial.sh -b $*.elf -x $< -o $@
 
 %.hex: %.elf
 	objcopy -Oihex $*.elf $*.hex
