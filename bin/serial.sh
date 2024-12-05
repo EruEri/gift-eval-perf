@@ -55,6 +55,9 @@ TMP=`mktemp`
 
 grep -a -v '>' $TMP | grep -a "$ADDR_CYCLES" | cut -f 2-4 -d ' ' > $OUT
 
+
+printf "Result to $OUT\n"
+
 rm $TMP
 
 # Kill openocd

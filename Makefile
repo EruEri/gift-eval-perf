@@ -141,7 +141,7 @@ reboot:
 	sh ./bin/serial.sh -b $*.elf -x $< -o $@
 
 %.hex: %.elf
-	objcopy -Oihex $*.elf $*.hex
+	$(OBJCOPY) -Oihex $*.elf $*.hex
 
 force:
 	true
