@@ -109,7 +109,7 @@ unsigned long gift() {
   gift64_rearrange_key(rkeys, key_gift);
   giftb64_keyschedule(rkeys);
   unsigned long t1 = get_cycle_count();
-  gift64_encrypt_block(ciphertexts, rkeys, block0, block1);
+  giftb64_encrypt_block(ciphertexts, rkeys, block0, block1);
   return get_cycle_count() - t1;
 }
 

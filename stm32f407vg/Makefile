@@ -13,9 +13,9 @@ OS=$(shell uname -s)
 ARCH=$(shell uname -m)
 
 LD_FLAGS=-L${LIBDIR}		\
-	  -lstm32f4xxbsp	\
-	  -lstm32f4xxhal	\
-          -Wl,--gc-sections
+	-lstm32f4xxbsp	\
+	-lstm32f4xxhal	\
+    -Wl,--gc-sections
 
 CFLAGS=-Wall		\
 	-mcpu=cortex-m4 \
@@ -26,11 +26,11 @@ CFLAGS=-Wall		\
 	-DNUCLEO
 
 INCLUDES=-I./include							\
-	  -I./ciphers/arch                                                \
-	  -I./STM32Cube_FW/Drivers/CMSIS/Device/ST/STM32F4xx/include	\
-	  -I./STM32Cube_FW/Drivers/CMSIS/include			\
-	  -I./STM32Cube_FW/Drivers/BSP/STM32F4xx-Nucleo			\
-	  -I./STM32Cube_FW/Drivers/STM32F4xx_HAL_Driver/include
+	-I./ciphers/arch                                                \
+	-I./STM32Cube_FW/Drivers/CMSIS/Device/ST/STM32F4xx/include	\
+	-I./STM32Cube_FW/Drivers/CMSIS/include			\
+	-I./STM32Cube_FW/Drivers/BSP/STM32F4xx-Nucleo			\
+	-I./STM32Cube_FW/Drivers/STM32F4xx_HAL_Driver/include
 
 
 
@@ -139,6 +139,9 @@ reboot:
 # Save serial input to the given file
 %.log: %.hex force
 	sh ./bin/serial.sh -b $*.elf -x $< -o $@
+
+%.res.log: %.hex force
+	sh ./bin/serial.sh -b $*.elf -x $< -o $*.log -c $@
 
 %.hex: %.elf
 	$(OBJCOPY) -Oihex $*.elf $*.hex
