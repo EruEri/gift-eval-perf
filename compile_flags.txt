@@ -1,0 +1,12 @@
+-Wall
+-mcpu=cortex-m4
+-mlittle-endian
+-mthumb
+-O3
+-DSTM32F407xx
+-DNUCLEO
+-I./stm32f407vg/include
+-I./common/STM32Cube_FW/Drivers/CMSIS/Device/ST/STM32F4xx/include
+-I./common/STM32Cube_FW/Drivers/CMSIS/include
+-I./common/STM32Cube_FW/Drivers/BSP/STM32F4xx-Nucleo
+-I./common/STM32Cube_FW/Drivers/STM32F4xx_HAL_Driver/include
