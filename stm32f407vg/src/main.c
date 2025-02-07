@@ -43,7 +43,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-volatile unsigned long bench_cycles[3] = {-1, -1, -1};
+volatile unsigned long bench_cycles[3] = {0, 0, 0};
+
+#define ERROR_CODE 0x42
 
 const u8 key_gift[KEY_SIZE] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 1st key
@@ -271,7 +273,7 @@ int main(void) {
         unsigned long cycles = gift();
         bench_cycles[i] = cycles;
         if (!memeq(ciphertexts, expect_ciphertext0, GIFT64_BLOCK_SIZE * 2)) {
-            bench_cycles[i] = 0;
+            bench_cycles[i] = ERROR_CODE;
         };
     }
 
