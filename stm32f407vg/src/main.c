@@ -158,11 +158,14 @@ static unsigned long get_cycle_count() {
 void bit_set(u8 *dst, const u8 *slice, size_t dst_b, size_t src_b) {
     u8 byte_src = src_b / 8;
     u8 byte_dst = dst_b / 8;
-    u8 src_bit = is_bit_set(slice[byte_src], 7 - (src_b % 8));
-    dst[byte_dst] = (dst[byte_dst] & ~(1 << (7 - (dst_b % 8)))) |
-                    (src_bit << (7 - (dst_b % 8)));
+    u8 shift_dst = dst_b % 8;
+    u8 src_bit = is_bit_set(slice[byte_src], (src_b % 8));
+    dst[byte_dst] =
+        (dst[byte_dst] & ~(1 << shift_dst)) | (src_bit << shift_dst);
 }
 
+
+// Work in progress
 void bitslice(u8 *slice) {
     u8 dst[GIFT64_BLOCK_SIZE * 2];
     u8 permutations[128] = {
@@ -181,17 +184,19 @@ void bitslice(u8 *slice) {
     memcpy(slice, dst, sizeof(dst));
 }
 
+
+
 void unbitslice(u8 *slice) {
     u8 dst[GIFT64_BLOCK_SIZE * 2];
     u8 permutations[128] = {
-        82, 86, 90, 94, 18, 22, 26, 30, 114, 118, 122, 126, 50,  54,  58,  62,
-        3,  7,  11, 15, 19, 23, 27, 31, 35,  39,  43,  47,  51,  55,  59,  63,
-        66, 70, 74, 78, 2,  6,  10, 14, 98,  102, 106, 110, 34,  38,  42,  46,
-        67, 71, 75, 79, 83, 87, 91, 95, 99,  103, 107, 111, 115, 119, 123, 127,
-        80, 84, 88, 92, 16, 20, 24, 28, 112, 116, 120, 124, 48,  52,  56,  60,
-        1,  5,  9,  13, 17, 21, 25, 29, 33,  37,  41,  45,  49,  53,  57,  61,
-        64, 68, 72, 76, 0,  4,  8,  12, 96,  100, 104, 108, 32,  36,  40,  44,
-        65, 69, 73, 77, 81, 85, 89, 93, 97,  101, 105, 109, 113, 117, 121, 125};
+        25, 29, 17, 21, 89, 93, 81, 85, 57,  61,  49,  53,  121, 125, 113, 117,
+        24, 28, 16, 20, 8,  12, 0,  4,  56,  60,  48,  52,  40,  44,  32,  36,
+        9,  13, 1,  5,  73, 77, 65, 69, 41,  45,  33,  37,  105, 109, 97,  101,
+        88, 92, 80, 84, 72, 76, 64, 68, 120, 124, 112, 116, 104, 108, 96,  100,
+        27, 31, 19, 23, 91, 95, 83, 87, 59,  63,  51,  55,  123, 127, 115, 119,
+        26, 30, 18, 22, 10, 14, 2,  6,  58,  62,  50,  54,  42,  46,  34,  38,
+        11, 15, 3,  7,  75, 79, 67, 71, 43,  47,  35,  39,  107, 111, 99,  103,
+        90, 94, 82, 86, 74, 78, 66, 70, 122, 126, 114, 118, 106, 110, 98,  102};
     for (size_t i = 0; i < 128; i += 1) {
         bit_set(dst, slice, permutations[i], i);
     }
@@ -209,7 +214,7 @@ unsigned long giftb(u8 *ciphertexts, const u8 *key_gift, const u8 block0[8],
     gift64_rearrange_key(rkeys, key_gift);
     giftb64_keyschedule(rkeys);
     unsigned long start = get_cycle_count();
-    gift64_encrypt_block(ciphertexts, rkeys, block, block + 8);
+    giftb64_encrypt_block(ciphertexts, rkeys, block, block + 8);
     unsigned long end = get_cycle_count();
     unbitslice(ciphertexts);
     return end - start;
