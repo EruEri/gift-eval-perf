@@ -43,34 +43,64 @@
 #include <stddef.h>
 #include <stdint.h>
 
+void *memcpy(void *dst, const void *src, size_t n);
+
 volatile unsigned long bench_cycles[3] = {0, 0, 0};
 
 #define ERROR_CODE 0x42
+
+#ifdef TEST_VECTOR_3
+
+const u8 key_gift[KEY_SIZE] = {0xbd, 0x91, 0x73, 0x1e, 0xb6, 0xbc, 0x27, 0x13,
+                               0xa1, 0xf9, 0xf6, 0xff, 0xc7, 0x50, 0x44, 0xe7};
+
+const u8 block0[GIFT64_BLOCK_SIZE] = {0xc4, 0x50, 0xc7, 0x72,
+                                      0x7a, 0x9b, 0x8a, 0x7d}; // 1st
+
+const u8 block1[GIFT64_BLOCK_SIZE] = {0xc4, 0x50, 0xc7, 0x72,
+                                      0x7a, 0x9b, 0x8a, 0x7d};
+
+const u8 cipher_expect[GIFT64_BLOCK_SIZE * 2] = {
+    // e3 27 28 85 fa 94 ba 8b
+    0xe3, 0x27, 0x28, 0x85, 0xfa, 0x94, 0xba, 0x8b,
+    0xe3, 0x27, 0x28, 0x85, 0xfa, 0x94, 0xba, 0x8b};
+
+#elif defined TEST_VECTOR_2
+
+// fe dc ba 98 76 54 32 10
+const u8 key_gift[KEY_SIZE] = {
+    // fe dc ba 98 76 54 32 10 fe dc ba 98 76 54 32 10
+    0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
+    0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10};
+
+// fe dc ba 98 76 54 32 10
+const u8 block0[GIFT64_BLOCK_SIZE] = {0xfe, 0xdc, 0xba, 0x98,
+                                      0x76, 0x54, 0x32, 0x10};
+
+const u8 block1[GIFT64_BLOCK_SIZE] = {0xfe, 0xdc, 0xba, 0x98,
+                                      0x76, 0x54, 0x32, 0x10};
+
+const u8 cipher_expect[GIFT64_BLOCK_SIZE * 2] = {
+    // c1 b7 1f 66 16 0f f5 87
+    0xc1, 0xb7, 0x1f, 0x66, 0x16, 0x0f, 0xf5, 0x87,
+    0xc1, 0xb7, 0x1f, 0x66, 0x16, 0x0f, 0xf5, 0x87};
+
+#else
 
 const u8 key_gift[KEY_SIZE] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 1st key
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 const u8 block0[GIFT64_BLOCK_SIZE] = {0x00, 0x00, 0x00, 0x00,
-                                      0x00, 0x00, 0x00, 0x00}; // 1st plaintext
+                                      0x00, 0x00, 0x00, 0x00}; // 1st
 const u8 block1[GIFT64_BLOCK_SIZE] = {0x00, 0x00, 0x00, 0x00,
                                       0x00, 0x00, 0x00, 0x00};
 
-const u8 expect_ciphertext0[GIFT64_BLOCK_SIZE * 2] = {
+const u8 cipher_expect[GIFT64_BLOCK_SIZE * 2] = {
     // f6 2b c3 ef 34 f7 75 ac
     0xf6, 0x2b, 0xc3, 0xef, 0x34, 0xf7, 0x75, 0xac,
     0xf6, 0x2b, 0xc3, 0xef, 0x34, 0xf7, 0x75, 0xac};
-
-// const u8 key_gift[KEY_SIZE] = {0xbd, 0x91, 0x73, 0x1e, 0xb6, 0xbc, 0x27,
-// 0x13,
-//                                0xa1, 0xf9, 0xf6, 0xff, 0xc7, 0x50, 0x44,
-//                                0xe7};
-
-// const u8 block0[GIFT64_BLOCK_SIZE] = {0xc4, 0x50, 0xc7, 0x72,
-//                                       0x7a, 0x9b, 0x8a, 0x7d}; // 1st
-//                                       plaintext
-// const u8 block1[GIFT64_BLOCK_SIZE] = {0xc4, 0x50, 0xc7, 0x72,
-//                                       0x7a, 0x9b, 0x8a, 0x7d};
+#endif
 
 u8 ciphertexts[GIFT64_BLOCK_SIZE * 2] = {0};
 
@@ -123,7 +153,70 @@ static unsigned long get_cycle_count() {
 #endif
 }
 
-unsigned long gift() {
+#define is_bit_set(bytes, shift) (((bytes) & (1 << (shift))) == (1 << (shift)))
+
+void bit_set(u8 *dst, const u8 *slice, size_t dst_b, size_t src_b) {
+    u8 byte_src = src_b / 8;
+    u8 byte_dst = dst_b / 8;
+    u8 src_bit = is_bit_set(slice[byte_src], 7 - (src_b % 8));
+    dst[byte_dst] = (dst[byte_dst] & ~(1 << (7 - (dst_b % 8)))) |
+                    (src_bit << (7 - (dst_b % 8)));
+}
+
+void bitslice(u8 *slice) {
+    u8 dst[GIFT64_BLOCK_SIZE * 2];
+    u8 permutations[128] = {
+        100, 80,  36, 16, 101, 81,  37, 17, 102, 82,  38, 18, 103, 83,  39, 19,
+        68,  84,  4,  20, 69,  85,  5,  21, 70,  86,  6,  22, 71,  87,  7,  23,
+        108, 88,  44, 24, 109, 89,  45, 25, 110, 90,  46, 26, 111, 91,  47, 27,
+        76,  92,  12, 28, 77,  93,  13, 29, 78,  94,  14, 30, 79,  95,  15, 31,
+        96,  112, 32, 48, 97,  113, 33, 49, 98,  114, 34, 50, 99,  115, 35, 51,
+        64,  116, 0,  52, 65,  117, 1,  53, 66,  118, 2,  54, 67,  119, 3,  55,
+        104, 120, 40, 56, 105, 121, 41, 57, 106, 122, 42, 58, 107, 123, 43, 59,
+        72,  124, 8,  60, 73,  125, 9,  61, 74,  126, 10, 62, 75,  127, 11, 63};
+
+    for (size_t i = 0; i < 128; i += 1) {
+        bit_set(dst, slice, permutations[i], i);
+    }
+    memcpy(slice, dst, sizeof(dst));
+}
+
+void unbitslice(u8 *slice) {
+    u8 dst[GIFT64_BLOCK_SIZE * 2];
+    u8 permutations[128] = {
+        82, 86, 90, 94, 18, 22, 26, 30, 114, 118, 122, 126, 50,  54,  58,  62,
+        3,  7,  11, 15, 19, 23, 27, 31, 35,  39,  43,  47,  51,  55,  59,  63,
+        66, 70, 74, 78, 2,  6,  10, 14, 98,  102, 106, 110, 34,  38,  42,  46,
+        67, 71, 75, 79, 83, 87, 91, 95, 99,  103, 107, 111, 115, 119, 123, 127,
+        80, 84, 88, 92, 16, 20, 24, 28, 112, 116, 120, 124, 48,  52,  56,  60,
+        1,  5,  9,  13, 17, 21, 25, 29, 33,  37,  41,  45,  49,  53,  57,  61,
+        64, 68, 72, 76, 0,  4,  8,  12, 96,  100, 104, 108, 32,  36,  40,  44,
+        65, 69, 73, 77, 81, 85, 89, 93, 97,  101, 105, 109, 113, 117, 121, 125};
+    for (size_t i = 0; i < 128; i += 1) {
+        bit_set(dst, slice, permutations[i], i);
+    }
+    memcpy(slice, dst, sizeof(dst));
+}
+
+// Work in progress
+unsigned long giftb(u8 *ciphertexts, const u8 *key_gift, const u8 block0[8],
+                    const u8 block1[8]) {
+    u32 rkeys[56] = {0};
+    u8 block[16] = {0};
+    memcpy(block, block0, 8);
+    memcpy(block + 8, block1, 8);
+    bitslice(block);
+    gift64_rearrange_key(rkeys, key_gift);
+    giftb64_keyschedule(rkeys);
+    unsigned long start = get_cycle_count();
+    gift64_encrypt_block(ciphertexts, rkeys, block, block + 8);
+    unsigned long end = get_cycle_count();
+    unbitslice(ciphertexts);
+    return end - start;
+}
+
+unsigned long gift(u8 *ciphertexts, const u8 key_gift[16], const u8 block0[8],
+                   const u8 block1[8]) {
     u32 rkeys[56] = {0};
     gift64_rearrange_key(rkeys, key_gift);
     giftb64_keyschedule(rkeys);
@@ -269,12 +362,17 @@ int main(void) {
 
     for (int i = 0; i < 3; i++) {
 
-        // bench_lens[i] = len;
-        unsigned long cycles = gift();
+#ifdef BITSLICE
+        unsigned long cycles = giftb(ciphertexts, key_gift, block0, block1);
+#else
+        unsigned long cycles = gift(ciphertexts, key_gift, block0, block1);
+#endif
         bench_cycles[i] = cycles;
-        if (!memeq(ciphertexts, expect_ciphertext0, GIFT64_BLOCK_SIZE * 2)) {
+#ifndef FORCE_RESULT
+        if (!memeq(ciphertexts, cipher_expect, GIFT64_BLOCK_SIZE * 2)) {
             bench_cycles[i] = ERROR_CODE;
         };
+#endif
     }
 
     while (1) {

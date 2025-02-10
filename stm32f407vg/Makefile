@@ -5,14 +5,13 @@ AR=arm-none-eabi-ar
 OBJCOPY=arm-none-eabi-objcopy
 OPENOCD=openocd
 SCREEN=screen
-OPENOCD_PREFIX=/usr
 LINKER_CCRAM=linker/STM32F407VGTX_FLASH.ccram.ld
 LINKER_RAM=linker/STM32F407VGTX_FLASH.ld
 LIBDIR=./lib
 OS=$(shell uname -s)
 ARCH=$(shell uname -m)
 
-LD_FLAGS=-L${LIBDIR}		\
+LD_FLAGS=-L${LIBDIR} \
 	-lstm32f4xxbsp	\
 	-lstm32f4xxhal	\
     -Wl,--gc-sections
@@ -32,32 +31,43 @@ INCLUDES=-I./include							\
 	-I./STM32Cube_FW/Drivers/BSP/STM32F4xx-Nucleo			\
 	-I./STM32Cube_FW/Drivers/STM32F4xx_HAL_Driver/include
 
+DEFINES=
+FORCE_RESULT=
+TEST_VECTOR=
+BITSLICE=
 
+.PHONY: src/main.o
 
-
-ifeq ($(shell test $(OS) = FreeBSD), 0)
-	OPENOCD_PREFIX=/usr/local
+ifeq ($(BITSLICE), 1)
+DEFINES+= -DBITSLICE
 endif
 
-ifeq ($(shell test $(OS) = Darwin), 0)
-	ifeq ($(shell test $(ARCH) = arm64), 0)
-		OPENOCD_PREFIX=/opt/homebrew
-	else ifeq ($(shell test $(ARCH) = x86_64"), 0)
-		OPENOCD_PREFIX=/usr/local/homebrew
-	endif
-	
+
+ifeq ($(TEST_VECTOR), 3)
+DEFINES+= -DTEST_VECTOR_3
+else ifeq ($(TEST_VECTOR), 2)
+DEFINES+= -DTEST_VECTOR_2
+else 
+DEFINES+= -DTEST_VECTOR_1
 endif
 
+
+ifeq ($(FORCE_RESULT), 1)
+DEFINES+= -DFORCE_RESULT
+endif
 
 ################################################################
 # Global setup
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c -o $@ $<
 %.o: %.s
-	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c -o $@ $<
 
-.PRECIOUS: %.o
+src/main.o: src/main.c
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c -o $@ $<
+
+# .PRECIOUS: %.o
 
 ################################################################
 # HAL library
@@ -86,25 +96,16 @@ SRC_OBJS = $(patsubst %.s,%.o, $(patsubst %.c,%.o, $(SRC_FILES)))
 CIPHERS_FILES = $(wildcard ciphers/*.c ciphers/*.s)
 CIPHERS_OBJS = $(patsubst %.s,%.o, $(patsubst %.c,%.o, $(CIPHERS_FILES)))
 
-CIPHERS=ciphers/gift.s
-
-all: gift64 gift64.ccram
-
-gift64: ciphers/gift64.elf
-
-gift64.ccram: ciphers/gift64.ccram.elf
-
-
 
 %.elf: %.o $(SRC_OBJS) $(CIPHERS_OBJS) lib/libstm32f4xxhal.a lib/libstm32f4xxbsp.a
-	$(CC) $(CFLAGS) -T$(LINKER_RAM) $<					\
+	$(CC) $(CFLAGS) $(DEFINES) -T$(LINKER_RAM) $<					\
 		src/stm32f4xx_it.o 			\
 		src/syscalls.o src/system_stm32f4xx.o				\
 		src/startup_stm32f407xx.o				\
 		src/main.o -o $@ $(LD_FLAGS)
 
 %.ccram.elf: %.o $(SRC_OBJS) $(CIPHERS_OBJS) lib/libstm32f4xxhal.a lib/libstm32f4xxbsp.a
-	$(CC) $(CFLAGS) -T$(LINKER_CCRAM) $<					\
+	$(CC) $(CFLAGS) $(DEFINES) -T$(LINKER_CCRAM) $<					\
 		src/stm32f4xx_it.o 			\
 		src/syscalls.o src/system_stm32f4xx.o				\
 		src/startup_stm32f407xx.o				\
@@ -120,20 +121,28 @@ clean:
 	      $(SRC_OBJS)			\
 	      $(CIPHERS_BINS)			\
 
+clean-res:
+	find ciphers -type f -name '*.elf' -delete
+	find ciphers -type f -name '*.o' -delete
+	find ciphers -type f -name '*.log' -delete
+
 clean-all:
 	make clean
+	make clean-res
+
+	
 
 ################################################################
 # Interactions with the board
 
 # Restart the board
 reboot:
-	sudo $(OPENOCD) -f $(OPENOCD_PREFIX)/share/openocd/scripts/board/st_nucleo_f4.cfg \
+	$(OPENOCD) -f board/st_nucleo_f4.cfg \
 	                -c "init; reset; exit"
 
 # Load .hex file to the board
 %.upload: %.hex
-	sudo $(OPENOCD) -f $(OPENOCD_PREFIX)/share/openocd/scripts/board/st_nucleo_f4.cfg \
+	$(OPENOCD) -f board/st_nucleo_f4.cfg \
 	                -c "init; reset halt; flash write_image erase $<; reset run; exit"
 
 # Save serial input to the given file

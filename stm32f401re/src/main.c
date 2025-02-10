@@ -41,7 +41,6 @@
 #include "../include/gift64.h"
 
 #include <stdint.h>
-#include <stdio.h>
 
 volatile unsigned long bench_cycles[] = {-1, -1, -1};
 
