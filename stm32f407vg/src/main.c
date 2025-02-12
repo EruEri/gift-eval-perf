@@ -1,42 +1,3 @@
-/**
- ******************************************************************************
- * @file    UART/UART_Printf/Src/main.c
- * @author  MCD Application Team
- * @brief   This example shows how to retarget the C library printf function
- *          to the UART.
- ******************************************************************************
- * @attention
- *
- * <h2><center>&copy; COPYRIGHT(c) 2017 STMicroelectronics</center></h2>
- *
- * Redistribution and use in source and binary forms, with or without
- *modification, are permitted provided that the following conditions are met:
- *   1. Redistributions of source code must retain the above copyright notice,
- *      this list of conditions and the following disclaimer.
- *   2. Redistributions in binary form must reproduce the above copyright
- *notice, this list of conditions and the following disclaimer in the
- *documentation and/or other materials provided with the distribution.
- *   3. Neither the name of STMicroelectronics nor the names of its contributors
- *      may be used to endorse or promote products derived from this software
- *      without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- *ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- *LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- *SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- *INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- *CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************
- */
-
-/* Includes ------------------------------------------------------------------*/
-
 #include "../include/main.h"
 #include "../include/gift64.h"
 
@@ -44,6 +5,7 @@
 #include <stdint.h>
 
 void *memcpy(void *dst, const void *src, size_t n);
+int memcmp(const void *s1, const void *s2, size_t n);
 
 volatile unsigned long bench_cycles[3] = {0, 0, 0};
 
@@ -104,26 +66,6 @@ const u8 cipher_expect[GIFT64_BLOCK_SIZE * 2] = {
 
 u8 ciphertexts[GIFT64_BLOCK_SIZE * 2] = {0};
 
-/**
- *
- * Portions COPYRIGHT 2018 STMicroelectronics
- * Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
- *
- ******************************************************************************
- * @file    timing_alt_template.c[
- * @author  MCD Application Team
- * @brief   mbedtls alternate timing functions implementation.
- *          mbedtls timing API is implemented using the CMSIS-RTOS v1/v2 API
- *          this file has to be reamed to timing_alt.c and copied under
- *          the project tree.
- ******************************************************************************
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0
- */
-
 static unsigned long get_cycle_count() {
     /* retrieve the CPU cycles using the Cortex-M DWT->CYCCNT register
      * avaialable only starting from CM3
@@ -164,27 +106,24 @@ void bit_set(u8 *dst, const u8 *slice, size_t dst_b, size_t src_b) {
         (dst[byte_dst] & ~(1 << shift_dst)) | (src_bit << shift_dst);
 }
 
-
 // Work in progress
 void bitslice(u8 *slice) {
     u8 dst[GIFT64_BLOCK_SIZE * 2];
     u8 permutations[128] = {
-        100, 80,  36, 16, 101, 81,  37, 17, 102, 82,  38, 18, 103, 83,  39, 19,
-        68,  84,  4,  20, 69,  85,  5,  21, 70,  86,  6,  22, 71,  87,  7,  23,
-        108, 88,  44, 24, 109, 89,  45, 25, 110, 90,  46, 26, 111, 91,  47, 27,
-        76,  92,  12, 28, 77,  93,  13, 29, 78,  94,  14, 30, 79,  95,  15, 31,
-        96,  112, 32, 48, 97,  113, 33, 49, 98,  114, 34, 50, 99,  115, 35, 51,
-        64,  116, 0,  52, 65,  117, 1,  53, 66,  118, 2,  54, 67,  119, 3,  55,
-        104, 120, 40, 56, 105, 121, 41, 57, 106, 122, 42, 58, 107, 123, 43, 59,
-        72,  124, 8,  60, 73,  125, 9,  61, 74,  126, 10, 62, 75,  127, 11, 63};
+        114, 38,  82, 6,  115, 39,  83, 7,  112, 36,  80, 4,  113, 37,  81, 5,
+        50,  34,  18, 2,  51,  35,  19, 3,  48,  32,  16, 0,  49,  33,  17, 1,
+        122, 46,  90, 14, 123, 47,  91, 15, 120, 44,  88, 12, 121, 45,  89, 13,
+        58,  42,  26, 10, 59,  43,  27, 11, 56,  40,  24, 8,  57,  41,  25, 9,
+        118, 102, 86, 70, 119, 103, 87, 71, 116, 100, 84, 68, 117, 101, 85, 69,
+        54,  98,  22, 66, 55,  99,  23, 67, 52,  96,  20, 64, 53,  97,  21, 65,
+        126, 110, 94, 78, 127, 111, 95, 79, 124, 108, 92, 76, 125, 109, 93, 77,
+        62,  106, 30, 74, 63,  107, 31, 75, 60,  104, 28, 72, 61,  105, 29, 73};
 
     for (size_t i = 0; i < 128; i += 1) {
         bit_set(dst, slice, permutations[i], i);
     }
     memcpy(slice, dst, sizeof(dst));
 }
-
-
 
 void unbitslice(u8 *slice) {
     u8 dst[GIFT64_BLOCK_SIZE * 2];
@@ -210,7 +149,7 @@ unsigned long giftb(u8 *ciphertexts, const u8 *key_gift, const u8 block0[8],
     u8 block[16] = {0};
     memcpy(block, block0, 8);
     memcpy(block + 8, block1, 8);
-    bitslice(block);
+    unbitslice(block);
     gift64_rearrange_key(rkeys, key_gift);
     giftb64_keyschedule(rkeys);
     unsigned long start = get_cycle_count();
@@ -374,7 +313,7 @@ int main(void) {
 #endif
         bench_cycles[i] = cycles;
 #ifndef FORCE_RESULT
-        if (!memeq(ciphertexts, cipher_expect, GIFT64_BLOCK_SIZE * 2)) {
+        if (memcmp(ciphertexts, cipher_expect, GIFT64_BLOCK_SIZE * 2) != 0) {
             bench_cycles[i] = ERROR_CODE;
         };
 #endif

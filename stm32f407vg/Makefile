@@ -146,11 +146,11 @@ reboot:
 	                -c "init; reset halt; flash write_image erase $<; reset run; exit"
 
 # Save serial input to the given file
-%.log: %.hex force
+%.cycles: %.hex force
 	sh ./bin/serial.sh -b $*.elf -x $< -o $@
 
-%.res.log: %.hex force
-	sh ./bin/serial.sh -b $*.elf -x $< -o $*.log -c $@
+%.cipher: %.hex force
+	sh ./bin/serial.sh -b $*.elf -x $< -o $*.cycles -c $@
 
 %.hex: %.elf
 	$(OBJCOPY) -Oihex $*.elf $*.hex
