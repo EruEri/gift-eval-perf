@@ -15,12 +15,12 @@ On two different memory area
 ```sh
     # The number of cycles will be outputed to ciphers/gift64.unroll.cycles file
     $ make ciphers/gift64.unroll.cycles
-    # The number of cycles will be outputed to stm32f407vg/ciphers/gift64.ccram.log file
-    $ make  ciphers/gift64.unroll.ccmram.cycles
-    # The number of cycles will be outputed to ciphers/gift64.unroll.cycles file
+    # The number of cycles will be outputed to ciphers/gift64.unroll.ccmram.cycles file
+    $ make ciphers/gift64.unroll.ccmram.cycles
+    # The number of cycles will be outputed to ciphers/gift64.compact.cycles file
     $ make ciphers/gift64.compact.cycles
-    # The number of cycles will be outputed to stm32f407vg/ciphers/gift64.ccram.log file
-    $ make  ciphers/gift64.compact.ccmram.cycles
+    # The number of cycles will be outputed to ciphers/gift64.compact.ccmram.cycles file
+    $ make ciphers/gift64.compact.ccmram.cycles
 ```
 
 By default the benchmark runs the [gift64 test-vector 1](https://github.com/giftcipher/gift/blob/master/implementations/test%20vectors/GIFT64_test_vector_1.txt), but by changing the Makefile variable `TEST_VECTOR`, you can change the test-vector.
