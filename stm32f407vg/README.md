@@ -46,17 +46,17 @@ To also write the encrypted cipher.
 ## Results
 
 
-| iteration      | 0   | 1   | 2   |
-|----            |---- |---- |---- |
-| ram   (cycles) | 875 | 868 | 868 |
-| ccram (cycles) | 844 | 837 | 837 |
+| iteration       | 0   | 1   | 2   |
+|----             |---- |---- |---- |
+| ram   (cycles)  | 875 | 868 | 868 |
+| ccmram (cycles) | 844 | 837 | 837 |
 
 : Number of cycles used to encrypt two blocks on STM32F407VG using gift64 unroll implementation
 
-| iteration      | 0   | 1   | 2   |
-|----            |---- |---- |---- |
-| ram   (cycles) | 944 | 930 | 930 |
-| ccram (cycles) | 912 | 897 | 897 |
+| iteration       | 0   | 1   | 2   |
+|----             |---- |---- |---- |
+| ram   (cycles)  | 944 | 930 | 930 |
+| ccmram (cycles) | 912 | 897 | 897 |
 
 : Number of cycles used to encrypt two blocks on STM32F407VG using gift64 compact implementation
 

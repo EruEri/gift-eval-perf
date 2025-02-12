@@ -31,20 +31,29 @@ INCLUDES=-I./include							\
 	-I./STM32Cube_FW/Drivers/BSP/STM32F4xx-Nucleo			\
 	-I./STM32Cube_FW/Drivers/STM32F4xx_HAL_Driver/include
 
+DEFINES=
+FORCE_RESULT=
+TEST_VECTOR=
+BITSLICE=
 
+.PHONY: src/main.o
 
-
-ifeq ($(shell test $(OS) = FreeBSD), 0)
-	OPENOCD_PREFIX=/usr/local
+ifeq ($(BITSLICE), 1)
+DEFINES+= -DBITSLICE
 endif
 
-ifeq ($(shell test $(OS) = Darwin), 0)
-	ifeq ($(shell test $(ARCH) = arm64), 0)
-		OPENOCD_PREFIX=/opt/homebrew
-	else ifeq ($(shell test $(ARCH) = x86_64"), 0)
-		OPENOCD_PREFIX=/usr/local/homebrew
-	endif
-	
+
+ifeq ($(TEST_VECTOR), 3)
+DEFINES+= -DTEST_VECTOR_3
+else ifeq ($(TEST_VECTOR), 2)
+DEFINES+= -DTEST_VECTOR_2
+else 
+DEFINES+= -DTEST_VECTOR_1
+endif
+
+
+ifeq ($(FORCE_RESULT), 1)
+DEFINES+= -DFORCE_RESULT
 endif
 
 
@@ -56,7 +65,10 @@ endif
 %.o: %.s
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
-.PRECIOUS: %.o
+src/main.o: src/main.c
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c -o $@ $<
+
+# .PRECIOUS: %.o
 
 ################################################################
 # HAL library
@@ -85,16 +97,10 @@ SRC_OBJS = $(patsubst %.s,%.o, $(patsubst %.c,%.o, $(SRC_FILES)))
 CIPHERS_FILES = $(wildcard ciphers/*.c ciphers/*.s)
 CIPHERS_OBJS = $(patsubst %.s,%.o, $(patsubst %.c,%.o, $(CIPHERS_FILES)))
 
-CIPHERS=ciphers/gift.s
-
-all: gift64
-
-gift64: ciphers/gift64.elf
-
 
 
 %.elf: %.o $(SRC_OBJS) $(CIPHERS_OBJS) lib/libstm32f4xxhal.a lib/libstm32f4xxbsp.a
-	$(CC) $(CFLAGS) -T$(LINKER_RAM) $<					\
+	$(CC) $(CFLAGS) $(DEFINES) -T$(LINKER_RAM) $<					\
 		src/stm32f4xx_it.o 			\
 		src/syscalls.o src/system_stm32f4xx.o				\
 		src/startup_stm32f401xe.o				\
@@ -111,27 +117,35 @@ clean:
 	      $(SRC_OBJS)			\
 	      $(CIPHERS_BINS)			\
 
+clean-res:
+	find ciphers -type f -name '*.elf' -delete
+	find ciphers -type f -name '*.o' -delete
+	find ciphers -type f -name '*.log' -delete
+	find ciphers -type f -name '*.cycles' -delete
+	find ciphers -type f -name '*.cipher' -delete
+
 clean-all:
 	make clean
+	make clean-res
 
 ################################################################
 # Interactions with the board
 
 # Restart the board
 reboot:
-	sudo $(OPENOCD) -f $(OPENOCD_PREFIX)/share/openocd/scripts/board/st_nucleo_f4.cfg \
+	$(OPENOCD) -f $(OPENOCD_PREFIX)/share/openocd/scripts/board/st_nucleo_f4.cfg \
 	                -c "init; reset; exit"
 
 # Load .hex file to the board
 %.upload: %.hex
-	sudo $(OPENOCD) -f $(OPENOCD_PREFIX)/share/openocd/scripts/board/st_nucleo_f4.cfg \
+	$(OPENOCD) -f $(OPENOCD_PREFIX)/share/openocd/scripts/board/st_nucleo_f4.cfg \
 	                -c "init; reset halt; flash write_image erase $<; reset run; exit"
 
 # Save serial input to the given file
 %.cycles: %.hex force
 	sh ./bin/serial.sh -b $*.elf -x $< -o $@
 
-%.results: %.hex force
+%.cipher: %.hex force
 	sh ./bin/serial.sh -b $*.elf -x $< -o $*.cycles -c $@
 
 %.hex: %.elf

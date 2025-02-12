@@ -125,6 +125,8 @@ clean-res:
 	find ciphers -type f -name '*.elf' -delete
 	find ciphers -type f -name '*.o' -delete
 	find ciphers -type f -name '*.log' -delete
+	find ciphers -type f -name '*.cycles' -delete
+	find ciphers -type f -name '*.cipher' -delete
 
 clean-all:
 	make clean
