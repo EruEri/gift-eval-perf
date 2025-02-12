@@ -104,7 +104,7 @@ CIPHERS_OBJS = $(patsubst %.s,%.o, $(patsubst %.c,%.o, $(CIPHERS_FILES)))
 		src/startup_stm32f407xx.o				\
 		src/main.o -o $@ $(LD_FLAGS)
 
-%.ccram.elf: %.o $(SRC_OBJS) $(CIPHERS_OBJS) lib/libstm32f4xxhal.a lib/libstm32f4xxbsp.a
+%.ccmram.elf: %.o $(SRC_OBJS) $(CIPHERS_OBJS) lib/libstm32f4xxhal.a lib/libstm32f4xxbsp.a
 	$(CC) $(CFLAGS) $(DEFINES) -T$(LINKER_CCRAM) $<					\
 		src/stm32f4xx_it.o 			\
 		src/syscalls.o src/system_stm32f4xx.o				\
