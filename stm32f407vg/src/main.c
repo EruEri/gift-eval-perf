@@ -13,11 +13,15 @@ volatile unsigned long bench_cycles[3] = {0, 0, 0};
 
 #ifdef TEST_VECTOR_3
 
+// GIFT64 - TEST VECTOR 3
+
+// https://github.com/giftcipher/gift/blob/master/implementations/test%20vectors/GIFT64_test_vector_3.txt
+
 const u8 key_gift[KEY_SIZE] = {0xbd, 0x91, 0x73, 0x1e, 0xb6, 0xbc, 0x27, 0x13,
                                0xa1, 0xf9, 0xf6, 0xff, 0xc7, 0x50, 0x44, 0xe7};
 
 const u8 block0[GIFT64_BLOCK_SIZE] = {0xc4, 0x50, 0xc7, 0x72,
-                                      0x7a, 0x9b, 0x8a, 0x7d}; // 1st
+                                      0x7a, 0x9b, 0x8a, 0x7d};
 
 const u8 block1[GIFT64_BLOCK_SIZE] = {0xc4, 0x50, 0xc7, 0x72,
                                       0x7a, 0x9b, 0x8a, 0x7d};
@@ -28,6 +32,10 @@ const u8 cipher_expect[GIFT64_BLOCK_SIZE * 2] = {
     0xe3, 0x27, 0x28, 0x85, 0xfa, 0x94, 0xba, 0x8b};
 
 #elif defined TEST_VECTOR_2
+
+// GIFT64 - TEST VECTOR 2
+
+// https://github.com/giftcipher/gift/blob/master/implementations/test%20vectors/GIFT64_test_vector_2.txt
 
 // fe dc ba 98 76 54 32 10
 const u8 key_gift[KEY_SIZE] = {
@@ -48,6 +56,10 @@ const u8 cipher_expect[GIFT64_BLOCK_SIZE * 2] = {
     0xc1, 0xb7, 0x1f, 0x66, 0x16, 0x0f, 0xf5, 0x87};
 
 #else
+
+// GIFT64 - TEST VECTOR 1
+
+// https://github.com/giftcipher/gift/blob/master/implementations/test%20vectors/GIFT64_test_vector_1.txt
 
 const u8 key_gift[KEY_SIZE] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 1st key
@@ -95,70 +107,6 @@ static unsigned long get_cycle_count() {
 #endif
 }
 
-#define is_bit_set(bytes, shift) (((bytes) & (1 << (shift))) == (1 << (shift)))
-
-void bit_set(u8 *dst, const u8 *slice, size_t dst_b, size_t src_b) {
-    u8 byte_src = src_b / 8;
-    u8 byte_dst = dst_b / 8;
-    u8 shift_dst = dst_b % 8;
-    u8 src_bit = is_bit_set(slice[byte_src], (src_b % 8));
-    dst[byte_dst] =
-        (dst[byte_dst] & ~(1 << shift_dst)) | (src_bit << shift_dst);
-}
-
-// Work in progress
-void bitslice(u8 *slice) {
-    u8 dst[GIFT64_BLOCK_SIZE * 2];
-    u8 permutations[128] = {
-        114, 38,  82, 6,  115, 39,  83, 7,  112, 36,  80, 4,  113, 37,  81, 5,
-        50,  34,  18, 2,  51,  35,  19, 3,  48,  32,  16, 0,  49,  33,  17, 1,
-        122, 46,  90, 14, 123, 47,  91, 15, 120, 44,  88, 12, 121, 45,  89, 13,
-        58,  42,  26, 10, 59,  43,  27, 11, 56,  40,  24, 8,  57,  41,  25, 9,
-        118, 102, 86, 70, 119, 103, 87, 71, 116, 100, 84, 68, 117, 101, 85, 69,
-        54,  98,  22, 66, 55,  99,  23, 67, 52,  96,  20, 64, 53,  97,  21, 65,
-        126, 110, 94, 78, 127, 111, 95, 79, 124, 108, 92, 76, 125, 109, 93, 77,
-        62,  106, 30, 74, 63,  107, 31, 75, 60,  104, 28, 72, 61,  105, 29, 73};
-
-    for (size_t i = 0; i < 128; i += 1) {
-        bit_set(dst, slice, permutations[i], i);
-    }
-    memcpy(slice, dst, sizeof(dst));
-}
-
-void unbitslice(u8 *slice) {
-    u8 dst[GIFT64_BLOCK_SIZE * 2];
-    u8 permutations[128] = {
-        25, 29, 17, 21, 89, 93, 81, 85, 57,  61,  49,  53,  121, 125, 113, 117,
-        24, 28, 16, 20, 8,  12, 0,  4,  56,  60,  48,  52,  40,  44,  32,  36,
-        9,  13, 1,  5,  73, 77, 65, 69, 41,  45,  33,  37,  105, 109, 97,  101,
-        88, 92, 80, 84, 72, 76, 64, 68, 120, 124, 112, 116, 104, 108, 96,  100,
-        27, 31, 19, 23, 91, 95, 83, 87, 59,  63,  51,  55,  123, 127, 115, 119,
-        26, 30, 18, 22, 10, 14, 2,  6,  58,  62,  50,  54,  42,  46,  34,  38,
-        11, 15, 3,  7,  75, 79, 67, 71, 43,  47,  35,  39,  107, 111, 99,  103,
-        90, 94, 82, 86, 74, 78, 66, 70, 122, 126, 114, 118, 106, 110, 98,  102};
-    for (size_t i = 0; i < 128; i += 1) {
-        bit_set(dst, slice, permutations[i], i);
-    }
-    memcpy(slice, dst, sizeof(dst));
-}
-
-// Work in progress
-unsigned long giftb(u8 *ciphertexts, const u8 *key_gift, const u8 block0[8],
-                    const u8 block1[8]) {
-    u32 rkeys[56] = {0};
-    u8 block[16] = {0};
-    memcpy(block, block0, 8);
-    memcpy(block + 8, block1, 8);
-    unbitslice(block);
-    gift64_rearrange_key(rkeys, key_gift);
-    giftb64_keyschedule(rkeys);
-    unsigned long start = get_cycle_count();
-    giftb64_encrypt_block(ciphertexts, rkeys, block, block + 8);
-    unsigned long end = get_cycle_count();
-    unbitslice(ciphertexts);
-    return end - start;
-}
-
 unsigned long gift(u8 *ciphertexts, const u8 key_gift[16], const u8 block0[8],
                    const u8 block1[8]) {
     u32 rkeys[56] = {0};
@@ -173,26 +121,6 @@ static void SystemClock_Config(void);
 static void Error_Handler(void);
 static unsigned long get_cycle_count();
 
-/**
- * @brief  System Clock Configuration
- *         The system Clock is configured as follow :
- *            System Clock source            = PLL (HSI)
- *            SYSCLK(Hz)                     = 84000000
- *            HCLK(Hz)                       = 84000000
- *            AHB Prescaler                  = 1
- *            APB1 Prescaler                 = 2
- *            APB2 Prescaler                 = 1
- *            HSI Frequency(Hz)              = 16000000
- *            PLL_M                          = 16
- *            PLL_N                          = 336
- *            PLL_P                          = 4
- *            PLL_Q                          = 7
- *            VDD(V)                         = 3.3
- *            Main regulator output voltage  = Scale2 mode
- *            Flash Latency(WS)              = 2
- * @param  None
- * @retval None
- */
 static void SystemClock_Config(void) {
     RCC_ClkInitTypeDef RCC_ClkInitStruct;
     RCC_OscInitTypeDef RCC_OscInitStruct;
@@ -233,11 +161,6 @@ static void SystemClock_Config(void) {
     }
 }
 
-/**
- * @brief  This function is executed in case of error occurrence.
- * @param  None
- * @retval None
- */
 static void Error_Handler(void) {
     /* Turn LED2 on */
     BSP_LED_On(LED2);
@@ -264,34 +187,6 @@ void assert_failed(uint8_t *file, uint32_t line) {
 }
 #endif
 
-/**
- * @}
- */
-
-/**
- * @}
- */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
-
-/* Private functions ---------------------------------------------------------*/
-
-// Returns 0 if [lhs] != [rhs] for the n bytes
-int memeq(const void *lhs, const void *rhs, size_t n) {
-    for (size_t i = 0; i < n; i += 1) {
-        if (((char *)lhs)[i] != ((char *)rhs)[i]) {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-/**
- * @brief  Main program
- * @param  None
- * @retval None
- */
 int main(void) {
     /* STM32F4xx HAL library initialization:
          - Configure the Flash prefetch, instruction and Data caches
@@ -301,16 +196,11 @@ int main(void) {
        */
     HAL_Init();
 
-    /* Configure the system clock to 84 MHz */
+    /* Configure the system clock */
     SystemClock_Config();
 
     for (int i = 0; i < 3; i++) {
-
-#ifdef BITSLICE
-        unsigned long cycles = giftb(ciphertexts, key_gift, block0, block1);
-#else
         unsigned long cycles = gift(ciphertexts, key_gift, block0, block1);
-#endif
         bench_cycles[i] = cycles;
 #ifndef FORCE_RESULT
         if (memcmp(ciphertexts, cipher_expect, GIFT64_BLOCK_SIZE * 2) != 0) {
