@@ -39,7 +39,7 @@ To also write the encrypted cipher.
 
 | iteration      | 0   | 1   | 2   |
 |----            |---- |---- |---- |
-| ram   (cycles) | 845 | 838 | 838 |
+| ram   (cycles) | 843 | 836 | 836 |
 
 : Number of cycles used to encrypt two blocks on STM32F401RE using gift64 unroll implementation
 

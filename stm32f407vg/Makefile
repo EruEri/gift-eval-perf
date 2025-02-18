@@ -5,7 +5,7 @@ AR=arm-none-eabi-ar
 OBJCOPY=arm-none-eabi-objcopy
 OPENOCD=openocd
 SCREEN=screen
-LINKER_CCRAM=linker/STM32F407VGTX_FLASH.ccram.ld
+LINKER_CCMRAM=linker/STM32F407VGTX_FLASH.ccmram.ld
 LINKER_RAM=linker/STM32F407VGTX_FLASH.ld
 LIBDIR=./lib
 OS=$(shell uname -s)
@@ -105,7 +105,7 @@ CIPHERS_OBJS = $(patsubst %.s,%.o, $(patsubst %.c,%.o, $(CIPHERS_FILES)))
 		src/main.o -o $@ $(LD_FLAGS)
 
 %.ccmram.elf: %.o $(SRC_OBJS) $(CIPHERS_OBJS) lib/libstm32f4xxhal.a lib/libstm32f4xxbsp.a
-	$(CC) $(CFLAGS) $(DEFINES) -T$(LINKER_CCRAM) $<					\
+	$(CC) $(CFLAGS) $(DEFINES) -T$(LINKER_CCMRAM) $<					\
 		src/stm32f4xx_it.o 			\
 		src/syscalls.o src/system_stm32f4xx.o				\
 		src/startup_stm32f407xx.o				\

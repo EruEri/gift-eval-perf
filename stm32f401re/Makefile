@@ -133,12 +133,12 @@ clean-all:
 
 # Restart the board
 reboot:
-	$(OPENOCD) -f $(OPENOCD_PREFIX)/share/openocd/scripts/board/st_nucleo_f4.cfg \
+	$(OPENOCD) -f board/st_nucleo_f4.cfg \
 	                -c "init; reset; exit"
 
 # Load .hex file to the board
 %.upload: %.hex
-	$(OPENOCD) -f $(OPENOCD_PREFIX)/share/openocd/scripts/board/st_nucleo_f4.cfg \
+	$(OPENOCD) -f board/st_nucleo_f4.cfg \
 	                -c "init; reset halt; flash write_image erase $<; reset run; exit"
 
 # Save serial input to the given file
